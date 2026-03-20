@@ -1,0 +1,18 @@
+[project]
+name = "poipoi-agent-tutorial"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "ddgs>=9.10.0",
+    "fastmcp>=3.0.1",
+    "openai>=2.16.0",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+chatbot = "examples.chatbot:main"
+workflow = "examples.workflow:main"
+search = "examples.search_agent:main"
+nodes = "examples.node_examples:main"
