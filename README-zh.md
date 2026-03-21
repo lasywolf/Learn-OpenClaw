@@ -1,5 +1,5 @@
 # 这个tutorial能干什么
-零基础一天 （9小时）学完agent！写这个教程就是想告诉大家，Agent其实非常简单！100%手写教程，目的是为了让教程更简单大家易读！
+零基础一天 （9小时）学完agent！写这个教程就是想告诉大家，Agent其实非常简单！
 并且能帮助你找到 Agent相关工作/实习！目前有很多个同学看我的教程找到了实习，且本教程在同学群里备受好评，现在开源给大伙！
 
 ## 总体内容展示
@@ -24,9 +24,9 @@
    - 但我们应该怎么去用Node呢，我们可以新建3个Node并把它们串起来实现功能`接收输入->上网搜索->大模型生成总结`，恭喜你已经实现了workflow，相关实现已经在[`examples/workflow`](./examples/workflow)
    - 现在新建个workflow，实现功能`接收用户输入->大模型回复`，并且loop反复调用这个workflow，恭喜你已经实现了chatbot，相关实现已经在[`examples/chatbot`](./examples/chatbot)
    - 现在尝试给chatbot一些tools(下文会详细讲tool)，让它能够上网搜索东西、编辑文件、运行命令行，恭喜你已经实现了agent，相关实现已经在[`examples/chatbot_with_tools`](./examples/chatbot_with_tools)
-   - 总结：**workflow = node + node**、**chatbot = workflow + loop**、 **agent = chatbot + tools = workflow + loop(循环) + tools**
-   - 恭喜你已经懂Agent了！可能你现在会有疑惑“这么简单的一个轻框架能有用吗，为什么选择 PoiFlow/自己造轻框架/PocketFlow 而不是 LangChain / Dify / Coze / Google ADK / Spring AI”，
-   并且我并没有看到过有人用langchain开发出来好产品，以及langchain还出过非常严重安全漏洞 [CVE-2025-68664](https://github.com/advisories/GHSA-c67j-w6g6-q2cm)，以及存在过度抽象、依赖地狱、bug多、不灵活难以定制等问题。事实上优秀的agent都是采用自己搭建轻框架来开发的，例如[kimi-cli](https://platform.moonshot.cn/docs/overview)、[pi-mono](https://github.com/badlogic/pi-mono)、[Pocketflow-examples](https://github.com/The-Pocket/PocketFlow/tree/main/cookbook)等等，所以非常推荐自己搭建轻框架或者直接调用llm api来开发。
+   - 总结：**workflow = node + node**、**chatbot = workflow + loop**、 **agent = chatbot + tools = workflow + loop + tools**
+   - 恭喜你已经懂Agent了！可能你现在会有疑惑“这么简单的一个轻框架能有用吗，为什么选择 自己造轻框架 而不是 LangChain / Dify / Coze / Google ADK / Spring AI”，
+   并且我并没有看到过有人用langchain开发出来好产品，以及langchain还出过非常严重安全漏洞 [CVE-2025-68664](https://github.com/advisories/GHSA-c67j-w6g6-q2cm)，以及存在过度抽象、依赖地狱、bug多、不灵活难以定制等问题。事实上优秀的agent都是采用自己搭建轻框架来开发的，例如[claude-code](https://code.claude.com/docs/zh-CN/overview)、[cursor](https://cursor.com/)、[kimi-cli](https://platform.moonshot.cn/docs/overview)、[pi-mono](https://github.com/badlogic/pi-mono)、[Pocketflow-examples](https://github.com/The-Pocket/PocketFlow/tree/main/cookbook)等等，所以非常推荐自己搭建轻框架或者直接调用llm api来开发。
 
 3. 实现 RAG （阅读需约1小时）
    - 选择 [Chroma](https://docs.trychroma.com/docs/overview/getting-started) 而不是Milvus、LanceDB、pgvector等等，因为Chroma部署简单、api简洁使用成本低
