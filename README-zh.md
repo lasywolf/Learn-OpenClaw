@@ -68,11 +68,21 @@
    - clone pi-mono，然后使用你的claude、cursor等等ai来分析整个项目的结构并且要求有mermaid图写到md里，你就能理解pi-mono它内部是怎样的，顺便一提不推荐看具体源码因为都是vibe coding没什么好看，想知道pi-mono的什么就让ai来告诉你
 
 8. 把 pi-mono 改造成 你的 OpenClaw（阅读约1小时）
-   - 安装 pi-mono: coding-agent本体 `npm install -g @mariozechner/pi-coding-agent`
+   - git clone https://github.com/badlogic/pi-mono.git
    - 安装 pm2: 后台长期运行且崩溃后自动重启 `npm install -g pm2`
-   - 安装 pi-mom:  `npm install -g @mariozechner/pi-mom`
+   - 因为pi-mono写了hardcode强制用opus-4.5，我们要自定义模型的BASE_URL和模型id，所以修改./pi-mono/packages/mom/src/agent.ts，`const model = getModel("anthropic", "claude-sonnet-4-5");`在这行下面写
+```
+model.id = process.env.ANTHROPIC_MODEL_ID || "claude-sonnet-4-5";
+if (process.env.ANTHROPIC_BASE_URL) model.baseUrl = process.env.ANTHROPIC_BASE_URL;
+```
+   - 准备好你的llm api，你需要添加下面环境变量，下面是以[kimi](https://www.moonshot.cn)举例，
+```
+export ANTHROPIC_MODEL_ID=kimi-k2.5
+export ANTHROPIC_BASE_URL=https://api.moonshot.cn/anthropic
+export ANTHROPIC_API_KEY=sk-m7q...
+```
    - 参考 im 接入方式[slack-bot-minimal-guide](https://github.com/badlogic/pi-mono/blob/main/packages/mom/docs/slack-bot-minimal-guide.md)，后面会更新飞书接入方式
-   - 使用pm2和im `pm2 start mom --name mom-slack -- --sandbox=host /Users/poipoi/mom-data`
+   - 运行`npm install`，然后启动`pm2 start packages/mom/dist/main.js --name mom --interpreter node -- --sandbox=host ./packages/mom/data`
    - 恭喜你！你已经打造了属于你自己的OpenClaw，你可以去到Slack上与你的OpenClaw聊
 
 ### 额外内容：达到面试/实习要求 （学习需约 2天 * 8小时）

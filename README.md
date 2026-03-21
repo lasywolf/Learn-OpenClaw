@@ -64,11 +64,21 @@ It can also help you land an agent-related job or internship. Quite a few studen
    - Clone pi-mono, then use Claude, Cursor, or other AI tools to analyze the entire project structure and ask them to produce a Mermaid diagram in Markdown. That way you can understand how pi-mono works internally. By the way, I do not recommend reading all of the source code in detail because much of it is vibe-coded and not especially worth studying line by line. If you want to know how pi-mono works, let AI explain the parts you care about.
 
 8. Turn pi-mono into your own OpenClaw (about 1 hour)
-   - Install pi-mono, the coding-agent itself: `npm install -g @mariozechner/pi-coding-agent`
+   - `git clone https://github.com/badlogic/pi-mono.git`
    - Install pm2 for long-running background processes and automatic restarts: `npm install -g pm2`
-   - Install pi-mom: `npm install -g @mariozechner/pi-mom`
+   - Because pi-mono hardcodes `opus-4.5`, if you want to use a custom model `BASE_URL` and model id, edit `./pi-mono/packages/mom/src/agent.ts` and add the following right below `const model = getModel("anthropic", "claude-sonnet-4-5");`
+```
+model.id = process.env.ANTHROPIC_MODEL_ID || "claude-sonnet-4-5";
+if (process.env.ANTHROPIC_BASE_URL) model.baseUrl = process.env.ANTHROPIC_BASE_URL;
+```
+   - Prepare your LLM API credentials. Here is a [Kimi](https://www.moonshot.cn) example:
+```
+export ANTHROPIC_MODEL_ID=kimi-k2.5
+export ANTHROPIC_BASE_URL=https://api.moonshot.cn/anthropic
+export ANTHROPIC_API_KEY=sk-m7q...
+```
    - Refer to this IM integration guide: [slack-bot-minimal-guide](https://github.com/badlogic/pi-mono/blob/main/packages/mom/docs/slack-bot-minimal-guide.md). A Feishu integration guide will be added later.
-   - Run it with pm2 and your IM integration: `pm2 start mom --name mom-slack -- --sandbox=host /Users/poipoi/mom-data`
+   - In `pi-mono`, run `npm install`, then start it with `pm2 start packages/mom/dist/main.js --name mom --interpreter node -- --sandbox=host ./packages/mom/data`
    - Congratulations. You have now built your own OpenClaw, and you can chat with it on Slack.
 
 ### Extra: Reach Interview / Internship Level (about 2 days * 8 hours)
