@@ -65,7 +65,8 @@
    - Openclaw项目的底层就是pi-mono，pi-mono就是世界上开源里最好的coding-agent
    - 你为什么应该学习这个 coding-agent 项目，因为 coding-agent经过时代的发展已经成为了通用 agent，它可以几乎做任何事情且效果很好
    - 一定要看 blog [What I learned building an opinionated and minimal coding agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)
-   - clone pi-mono，然后使用你的claude、cursor等等ai来分析整个项目的结构并且要求有mermaid图写到md里，你就能理解pi-mono它内部是怎样的，顺便一提不推荐看具体源码因为都是vibe coding没什么好看，想知道pi-mono的什么就让ai来告诉你
+   - clone pi-mono，然后使用你的claude、cursor等等ai来分析整个项目的结构并且要求有mermaid图写到md里，你就能理解pi-mono它内部是怎样的，因为代码都是ai写的，所以不推荐肉眼看源码，你应该让ai分析项目，然后你去读ai的报告
+   - 顺便一提，pi-mono有7个package，分别为pi-ai、pi-agent-core、pi-coding-agent、pi-mom、pi-tui、pi-web-ui、pi-pods，其中只需要看pi-ai、pi-agent-core、pi-coding-agent，其他的不需要看呢
 
 8. 把 pi-mono 改造成 你的 OpenClaw（阅读约1小时）
    - git clone https://github.com/badlogic/pi-mono.git

@@ -61,7 +61,8 @@ It can also help you land an agent-related job or internship. Quite a few studen
    - The foundation of the Openclaw project is pi-mono, and pi-mono is the best open-source coding agent in the world.
    - Why should you study this coding-agent project? Because coding agents have evolved into general-purpose agents. They can do almost anything and often do it very well.
    - You should definitely read the blog [What I learned building an opinionated and minimal coding agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/).
-   - Clone pi-mono, then use Claude, Cursor, or other AI tools to analyze the entire project structure and ask them to produce a Mermaid diagram in Markdown. That way you can understand how pi-mono works internally. By the way, I do not recommend reading all of the source code in detail because much of it is vibe-coded and not especially worth studying line by line. If you want to know how pi-mono works, let AI explain the parts you care about.
+   - Clone pi-mono, then use Claude, Cursor, or other AI tools to analyze the entire project structure and ask them to produce a Mermaid diagram in Markdown. That way you can understand how pi-mono works internally. Since much of the code was written by AI, I do not recommend reading the source line by line yourself. You should let AI analyze the project first, then read the report it produces.
+   - As a side note, pi-mono has 7 packages: `pi-ai`, `pi-agent-core`, `pi-coding-agent`, `pi-mom`, `pi-tui`, `pi-web-ui`, and `pi-pods`. You only really need to focus on `pi-ai`, `pi-agent-core`, and `pi-coding-agent`.
 
 8. Turn pi-mono into your own OpenClaw (about 1 hour)
    - `git clone https://github.com/badlogic/pi-mono.git`
