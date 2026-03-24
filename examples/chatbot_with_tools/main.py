@@ -24,12 +24,11 @@ class ChatNode(Node):
     """发送消息给 LLM，获取响应（可能包含 tool_calls）"""
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
-        messages = shared.get("messages", [])
-        tools = shared.get("tools", [])
+        messages = shared["messages"]
+        tools = shared["tools"]
 
         assistant_message = call_llm(messages=messages, tools=tools, system_prompt=SYSTEM_PROMPT)
         messages.append(assistant_message)
-        shared["messages"] = messages
 
         if assistant_message.get("tool_calls"):
             return "tool_call", assistant_message
@@ -42,8 +41,8 @@ class ToolCallNode(Node):
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
         response = payload
-        messages = shared.get("messages", [])
-        executor = shared.get("tool_executor")
+        messages = shared["messages"]
+        executor = shared["tool_executor"]
 
         tool_calls = executor.parse_tool_calls(response)
         results = executor.execute_all(tool_calls)
@@ -53,7 +52,6 @@ class ToolCallNode(Node):
             print(f"  [Tool] 结果: {result.content[:100]}...")
             messages.append(result.to_message())
 
-        shared["messages"] = messages
         return "chat", None
 
 
@@ -104,9 +102,9 @@ def run_chat() -> None:
 
 
 def main() -> None:
-    if not os.environ.get("OPENAI_API_KEY"):
-        print("⚠️  提示：请先设置环境变量 OPENAI_API_KEY")
-        print("   export OPENAI_API_KEY=your_key_here\n")
+    if not os.environ.get("OPENAI_API_KEY") or not os.environ.get("OPENAI_BASE_URL"):
+        print("⚠️  提示：请先设置环境变量 OPENAI_API_KEY 和 OPENAI_BASE_URL")
+        return
 
     run_chat()
 

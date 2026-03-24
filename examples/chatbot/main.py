@@ -9,41 +9,20 @@ from typing import Any, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from core.llm import call_llm_simple
+from core.llm import call_llm
 from core.node import Node, Flow, shared
+
+SYSTEM_PROMPT = "你是一个友好的对话助手，请回答用户的问题。"
 
 
 class ChatNode(Node):
     """对话节点：发送消息给 LLM 并获取回复"""
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
-        messages = shared.get("messages", [])
-
-        # 构建 prompt
-        prompt = self._build_prompt(messages)
-
-        # 调用 LLM
-        response = call_llm_simple(prompt)
-
-        # 保存到历史
-        messages.append({"role": "assistant", "content": response})
-        shared["messages"] = messages
-
-        return "output", response
-
-    def _build_prompt(self, messages: list) -> str:
-        """构建 prompt"""
-        parts = ["你是一个友好的对话助手，请回答用户的问题。\n"]
-
-        # 添加对话历史
-        for m in messages:
-            role = m.get("role", "")
-            if role == "user":
-                parts.append(f"User: {m.get('content', '')}")
-            elif role == "assistant":
-                parts.append(f"Assistant: {m.get('content', '')}")
-
-        return "\n".join(parts)
+        messages = shared["messages"]
+        assistant_message = call_llm(messages=messages, system_prompt=SYSTEM_PROMPT)
+        messages.append(assistant_message)
+        return "output", assistant_message
 
 
 class OutputNode(Node):
@@ -51,11 +30,12 @@ class OutputNode(Node):
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
         response = payload
-        print(f"\n🤖 Assistant: {response}\n")
+        content = response.get("content", "")
+        print(f"\n🤖 Assistant: {content}\n")
         return "default", None
 
 
-def run_chat():
+def run_chat() -> None:
     """运行对话循环"""
     print("=" * 60)
     print("🤖 Simple Chatbot")
