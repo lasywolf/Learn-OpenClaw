@@ -67,7 +67,7 @@ It can also help you land an agent-related job or internship. Quite a few studen
 8. Turn pi-mono into your own OpenClaw (about 1 hour)
    - `git clone https://github.com/badlogic/pi-mono.git`
    - Install pm2 for long-running background processes and automatic restarts: `npm install -g pm2`
-   - Because pi-mono hardcodes `opus-4.5`, if you want to use a custom model `BASE_URL` and model id, edit `./pi-mono/packages/mom/src/agent.ts` and add the following right below `const model = getModel("anthropic", "claude-sonnet-4-5");`
+   - Because pi-mono hardcodes `sonnet-4.5`, if you want to use a custom model `BASE_URL` and model id, edit `./pi-mono/packages/mom/src/agent.ts` and add the following right below `const model = getModel("anthropic", "claude-sonnet-4-5");`
 ```
 model.id = process.env.ANTHROPIC_MODEL_ID || "claude-sonnet-4-5";
 if (process.env.ANTHROPIC_BASE_URL) model.baseUrl = process.env.ANTHROPIC_BASE_URL;

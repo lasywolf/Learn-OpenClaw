@@ -71,7 +71,7 @@
 8. 把 pi-mono 改造成 你的 OpenClaw（阅读约1小时）
    - git clone https://github.com/badlogic/pi-mono.git
    - 安装 pm2: 后台长期运行且崩溃后自动重启 `npm install -g pm2`
-   - 因为pi-mono写了hardcode强制用opus-4.5，我们要自定义模型的BASE_URL和模型id，所以修改./pi-mono/packages/mom/src/agent.ts，`const model = getModel("anthropic", "claude-sonnet-4-5");`在这行下面写
+   - 因为pi-mono写了hardcode强制用sonnet-4.5，我们要自定义模型的BASE_URL和模型id，所以修改./pi-mono/packages/mom/src/agent.ts，`const model = getModel("anthropic", "claude-sonnet-4-5");`在这行下面写
 ```
 model.id = process.env.ANTHROPIC_MODEL_ID || "claude-sonnet-4-5";
 if (process.env.ANTHROPIC_BASE_URL) model.baseUrl = process.env.ANTHROPIC_BASE_URL;
