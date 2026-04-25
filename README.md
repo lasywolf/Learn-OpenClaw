@@ -113,3 +113,9 @@ PS: 已经很多同学通过看我的教程找到了实习。
    - 用过 docker 就行了，使用docker作为sandbox可以应对绝大多数场景
    - 部分对延时要求非常高的场景，需要做专门的agentic infra来优化延时（太复杂了了解下就好）
    - 推荐阅读 [为本地代理实现安全沙箱](https://cursor.com/cn/blog/agent-sandboxing)
+
+5. 了解 Harness（阅读需约15分钟）
+   - Harness 来源于 OpenAI 2026 年 2 月 11 日的文章 [工程技术：在智能体优先的世界中利用 Codex](https://openai.com/zh-Hans-CN/index/harness-engineering/)。虽然这篇文章介绍了 Harness，但它仍然是一个很模糊的概念，我看完也不能理解 Harness 具体是指哪一项东西哈哈🤣。
+   - 可以先把 Harness 理解成：给 AI 一个更好的运行环境，让 AI 跑起来更流畅，更好地去使用 Agent。
+   - 我现在理解的 Harness 里，其中一种就是 PRD2PR，也就是从产品需求文档自动推进到代码变更和 Pull Request，这类实践已经有很多企业在做了。
+   - 看这个文章：[Why Your “AI-First” Strategy Is Probably Wrong](https://x.com/intuitiveml/status/2043545596699750791)

@@ -107,3 +107,9 @@ PS: many students have already landed internships after following this tutorial.
    - If you have used Docker, that is already enough. Docker as a sandbox can handle the vast majority of cases.
    - Some scenarios with extremely strict latency requirements need dedicated agentic infrastructure to optimize latency, but that is complicated and only worth understanding at a high level.
    - Recommended reading: [Sandboxing local agents securely](https://cursor.com/cn/blog/agent-sandboxing)
+
+5. Understand Harness (about 15 minutes)
+   - Harness comes from OpenAI's February 11, 2026 article [Engineering: Harnessing Codex in an agent-first world](https://openai.com/zh-Hans-CN/index/harness-engineering/). Although the article introduces Harness, it is still a very vague concept. After reading it, I still cannot really tell what specific thing Harness refers to haha🤣.
+   - You can first understand Harness as giving AI a better running environment, making AI run more smoothly, and using agents better.
+   - In my current understanding, one type of Harness is PRD2PR, which means automatically moving from a product requirements document to code changes and a Pull Request. Many companies are already practicing this.
+   - Read this article: [Why Your “AI-First” Strategy Is Probably Wrong](https://x.com/intuitiveml/status/2043545596699750791)
