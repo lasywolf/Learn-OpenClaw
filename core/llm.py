@@ -53,6 +53,11 @@ def call_llm(
     result: dict[str, Any] = {
         "role": "assistant",
         "content": message.content or "",
+        "usage": {
+            "total_tokens": response.usage.total_tokens,
+            "prompt_tokens": response.usage.prompt_tokens,
+            "completion_tokens": response.usage.completion_tokens,
+        },
     }
 
     reasoning_content = getattr(message, "reasoning_content", None)

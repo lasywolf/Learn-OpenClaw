@@ -51,11 +51,33 @@
    - 实践：可以阅读[`tools`](./tools)和[`examples/chatbot_with_tools`](./examples/chatbot_with_tools)文件夹里的实现
    - 总结: MCP是Remote Tool，Skill是Local Tool，尽量不要设计Tool并且优先用linux的bash来解决问题
 
-5. 实现 Context / Memory（阅读需约1分钟）
-   - 短期 Context：最近几轮的完整对话
-   - 长期 Context：更早的对话，会"总结一次"进行压缩
-   - Memory = 短期 Context + 长期 Context
-
+5. 实现 Context / Memory（阅读需约10分钟）
+   - 短期 Context：未被总结压缩的最近几轮完整对话，保证大模型专注于当下任务
+   - 长期 Context：通过 LLM 对旧对话生成摘要，作为 system_message 保留在上下文最前端
+   - 短期Memory = 短期Context + 长期Context，写入`session.json`文件
+   - 长期Memory：压缩过程中自动提取用户偏好、重要事实等信息，写入` MEMORY.md `文件
+   - Memory = 短期Memory + 长期Memory
+   - 为什么需要管理对话记忆（Memory）：如果不对上下文进行管理，为了让大模型记住前面的所有工作，就需要将以往所有对话记录（即Context）丢给大模型，这时大模型会被海量的对话信息淹没（同时你的token燃烧的更快…），注意力会被稀释，大模型的输出速度也会变慢。
+   - 但如果我们做了记忆管理（Context分层 + 总结压缩），总结压缩可以大大减少Context长度（节约了token），另一方面，压缩后极少的token可以使大模型的输出更快更稳定。
+   - 我们实现了一个Memory模块，对所有的对话记忆进行管理。分为短期Context（未被总结压缩的最近几轮对话内容）、长期Context（已被总结压缩的对话内容）。总结生成长期Context的触发时机：对话内容大于等于大模型最长上下文长度的90%（当前具体已使用的token数可以通过大模型api返回的 `usage` 字段里提取出来）。
+   - 压缩为长期记忆之后丢给大模型的内容结构如下：
+     ```json
+     [
+         { // 长期Context：被压缩为摘要的系统提示
+             "role": "system",
+             "content": "对话历史摘要：..."
+         },
+         { // 短期Context：保留的最近几轮完整对话
+             "role": "user/assistant",
+             "content": "最近的对话内容..."
+         },
+         ...
+     ]
+     ```
+   - 同时，压缩过程中还会提取值得长期记忆的信息（如用户偏好、重要事实等）写入 `MEMORY.md` 文件，形成独立于对话的长期记忆。
+   - 实践：可以阅读[`/core/memory.py`](./core/memory.py)和[`/examples/chatbot_with_memory`](./examples/chatbot_with_memory)文件夹里的实现，对话完成退出之后，可在默认记忆存储文件夹下找到`session.json`文件和` MEMORY.md `文件。
+   - 总结：短期Context保证大模型专注于最近的Context，不会出现干活的时候忘了当下在做什么；长期Context保证大模型能够回忆起之前发生的事件（即使不记得事件的细节）。Context分层的设计是为了更多的KV Cache命中，所以Context的分层，最前面是最稳定的，最后面越不稳定。
+   
 6. 实现 Multi-Agent / Subagent / Agent Teams （阅读需约1小时）
    - multi-agent最初设想用google制定的A2A(agent to agent)协议，让不同地方的Agent进行交互，但这个设想失败了，multi-agent效果复杂且大部分性能还不如简单的single agent，且现实中没看到过agent用A2A协议进行交互
    - 但大伙发现有些场景可以用multi-agent来实现上下文隔离、只回传压缩结果、避免主上下文被工具细节污染，这样能提高agent的效果，可以看这个blog了解multi-agent到底是什么[How we built our multi-agent research system](https://www.anthropic.com/engineering/built-multi-agent-research-system)
