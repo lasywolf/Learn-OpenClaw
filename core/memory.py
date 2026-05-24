@@ -1,164 +1,136 @@
 import json
-import os
-from typing import List, Dict, Callable, Any
+from pathlib import Path
+from typing import Any
+
+from core.llm import call_llm
 
 
-# ---------- 长期记忆 ----------
-class LongTermMemory:
-    """管理 MEMORY.md 作为持久化笔记。保存重要事件、用户偏好等全局重要信息"""
-    def __init__(self, filepath: str = ".\chat_memory\MEMORY.md"):
-        self.filepath = filepath
-        # 确保目录存在
-        dir_name = os.path.dirname(self.filepath)
-        if dir_name:  # 避免空字符串（文件就在当前目录时）
-            os.makedirs(dir_name, exist_ok=True)
-        if not os.path.exists(self.filepath):
-            with open(self.filepath, "w", encoding="utf-8") as f:
-                f.write("# 长期记忆，包括用户偏好、重要事件等等\n\n")
+MEMORY_FILEPATH = Path(r".\chat_memory\session.jsonl")                                # 对话记忆文件存储路径（jsonl格式）
+LONG_TERM_MEMORY_FILEPATH = Path(r".\chat_memory\MEMORY.md")                          # 长期记忆文件存储路径（md格式）
+MAX_CONTEXT_LENGTH = 128_000                                                          # 大模型最大上下文窗口大小（按token计算）
+COMPRESS_THRESHOLD = 0.9                                                              # 摘要压缩阈值（达到阈值后自动摘要压缩）
+KEEP_MESSAGES_ON_COMPRESS = 4                                                         # 摘要压缩对话之后保留的最近对话轮数
+LONG_TERM_MEMORY_HEADER = "# 长期记忆：包括用户偏好、重要事件、运行环境等等\n\n"             # MEMORY.md文件的标题
+MESSAGE_KEYS = {"role", "content", "tool_calls", "tool_call_id", "reasoning_content"} # message字典中可出现的所有key值
 
-    def read(self) -> str:
-        with open(self.filepath, "r", encoding="utf-8") as f:
-            return f.read()
 
-    def write(self, content: str):
-        with open(self.filepath, "w", encoding="utf-8") as f:
-            f.write(content)
+class Memory:
+    """一份 jsonl 对话记录 + 一个长期记忆文件。"""
 
-    def append(self, text: str):
-        with open(self.filepath, "a", encoding="utf-8") as f:
-            f.write("\n" + text)
+    def __init__(self):
+        MEMORY_FILEPATH.parent.mkdir(parents=True, exist_ok=True)
+        LONG_TERM_MEMORY_FILEPATH.parent.mkdir(parents=True, exist_ok=True)
+        if not LONG_TERM_MEMORY_FILEPATH.exists():
+            LONG_TERM_MEMORY_FILEPATH.write_text(LONG_TERM_MEMORY_HEADER, encoding="utf-8")
 
-# ---------- 短期记忆 ----------
-class ShortTermMemory:
-    """短期记忆类：存储对话上下文，并且达到上下文阈值时可进行摘要压缩"""
-    def __init__(self,
-                 filepath: str = ".\chat_memory\session.json", # 短期记忆持久化文件存储路径
-                 max_context_length: int = 4096, # llm最大上下文token数
-                 compress_threshold: float = 0.9, # 触发摘要压缩的阈值
-                 keep_messages_on_compress: int = 4, # 摘要压缩后保留的完整对话轮数
-                 long_term_memory: LongTermMemory = None # 长期记忆类
-                 ):
-        self.filepath = filepath
-        # 确保目录存在
-        dir_name = os.path.dirname(self.filepath)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        self.max_context_length = max_context_length
-        self.compress_threshold = compress_threshold
-        self.messages: List[Dict[str, str]] = []
-        self.last_usage_total: int = 0
-        self.keep_messages_on_compress = keep_messages_on_compress
-        self.long_term_memory = long_term_memory
+        self.messages: list[dict[str, Any]] = []
+        self.last_usage_total = 0
         self._load()
 
     def _load(self):
-        if os.path.exists(self.filepath):
-            with open(self.filepath, "r", encoding="utf-8") as f:
-                try:
-                    self.messages = json.load(f)
-                except json.JSONDecodeError:
-                    self.messages = []
+        if not MEMORY_FILEPATH.exists():
+            return
 
-    def _save(self):
-        dir_name = os.path.dirname(self.filepath)
-        if dir_name:
-            os.makedirs(dir_name, exist_ok=True)
-        with open(self.filepath, "w", encoding="utf-8") as f:
-            json.dump(self.messages, f, ensure_ascii=False, indent=2)
+        for line in MEMORY_FILEPATH.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                self.messages.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+
+        if self._drop_unfinished_tool_turn():
+            self._write_all()
 
     def add_message(self, role: str, content: str):
-        self.messages.append({"role": role, "content": content})
-        self._save()
+        self.add_raw_message({"role": role, "content": content})
 
-    def update_usage(self, total_tokens: int):
-        self.last_usage_total = total_tokens
+    def add_raw_message(self, message: dict[str, Any]):
+        message = {key: value for key, value in message.items() if key in MESSAGE_KEYS}
+        self.messages.append(message)
+        with MEMORY_FILEPATH.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(message, ensure_ascii=False) + "\n")
+
+    def after_llm_response(self, assistant_message: dict[str, Any]):
+        self.add_raw_message(assistant_message)
+        self.last_usage_total = assistant_message.get("usage", {}).get("total_tokens", 0)
+        if self.needs_compression():
+            self.compress()
+
+    def build_context(self, system_prompt: str = "") -> list[dict[str, Any]]:
+        if not system_prompt:
+            return list(self.messages)
+
+        long_term_memory = LONG_TERM_MEMORY_FILEPATH.read_text(encoding="utf-8").strip()
+        if long_term_memory == LONG_TERM_MEMORY_HEADER.strip():
+            long_term_memory = ""
+
+        system_message = {"role": "system", "content": system_prompt}
+        if long_term_memory:
+            system_message["content"] += f"\n\n长期记忆：\n{long_term_memory}"
+
+        if self.messages and self.messages[0].get("role") == "system":
+            system_message["content"] += f"\n\n{self.messages[0]['content']}"
+            return [system_message, *self.messages[1:]]
+
+        return [system_message, *self.messages]
 
     def needs_compression(self) -> bool:
-        if self.max_context_length <= 0:
-            return False
-        return (self.last_usage_total / self.max_context_length) > self.compress_threshold
+        return self.last_usage_total > MAX_CONTEXT_LENGTH * COMPRESS_THRESHOLD
 
-    def compress_with_llm(self, llm_call: Callable[..., Dict[str, Any]]):
-        """
-        使用 call_llm 进行压缩：
-        call_llm 必须接收 messages 参数，返回包含 "content" 字段的字典。
-        """
-        # 保留最后若干轮对话
-        keep_count = max(2, min(self.keep_messages_on_compress, len(self.messages) - 2))
-        to_compress = self.messages[:-keep_count]
-        recent = self.messages[-keep_count:]
+    def compress(self):
+        if len(self.messages) <= KEEP_MESSAGES_ON_COMPRESS:
+            return
 
-        prompt = self._build_compress_prompt(to_compress)
+        old_messages = self.messages[:-KEEP_MESSAGES_ON_COMPRESS]
+        recent_messages = self.messages[-KEEP_MESSAGES_ON_COMPRESS:]
+        response = call_llm(messages=self._build_compress_prompt(old_messages))
 
-        # 调用 call_llm（使用其标准签名）
-        response = llm_call(messages=prompt)
-        llm_response_text = response.get("content", "")
-
-        # 解析 LLM 返回的 JSON
         try:
-            result = json.loads(llm_response_text)
+            result = json.loads(response.get("content", ""))
             summary = result.get("summary", "")
             memory_update = result.get("memory_update", "")
         except json.JSONDecodeError:
-            summary = llm_response_text
+            summary = response.get("content", "")
             memory_update = ""
 
-        # 更新短期记忆
-        compressed = [{"role": "system", "content": f"对话历史摘要：\n{summary}"}] + recent
-        self.messages = compressed
-        self._save()
+        self.messages = [{"role": "system", "content": f"对话历史摘要：\n{summary}"}, *recent_messages]
+        self._write_all()
 
-        # 更新长期记忆
-        if memory_update and self.long_term_memory:
-            self.long_term_memory.append(memory_update)
+        if memory_update:
+            with LONG_TERM_MEMORY_FILEPATH.open("a", encoding="utf-8") as f:
+                f.write("\n" + memory_update)
 
-    def _build_compress_prompt(self, old_messages: List[Dict[str, str]]) -> List[Dict[str, str]]:
-        """构建压缩提示词（内部已含 system 消息，直接喂给 call_llm）。"""
-        history_text = "\n".join([f"{m['role']}: {m['content']}" for m in old_messages])
-
-        system_prompt = (
-            "你是一个对话压缩助手。请对以下对话历史生成摘要，并判断是否有值得长期记住的信息。\n"
-            "请以 JSON 格式返回，包含两个字段：\n"
-            "  1. summary: 对话历史的简洁摘要（保留关键信息，如任务、决定、使用的工具、偏好等）。\n"
-            "  2. memory_update: 如果有新的值得长期记忆的信息（如用户偏好、重要事实、新知识），"
-            "请以一句话描述；如果没有新信息，返回空字符串。\n"
-            "只返回 JSON，不要附加任何其他文本。"
-        )
+    def _build_compress_prompt(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"请压缩以下对话历史：\n{history_text}"}
+            *messages,
+            {
+                "role": "user",
+                "content": (
+                    "请压缩以上对话历史，并判断是否有值得长期记住的信息（用户偏好、关键事实、运行环境等等。需要排除已有的长期记忆）。\n"
+                    "只返回 JSON，包含 summary: 对话历史摘要总结 和 memory_update: 值得长期记忆的信息。"
+                ),
+            },
         ]
 
-    def build_context(self, system_prompt: str = "") -> List[Dict[str, str]]:
-        """构建最终发给主 LLM 的消息列表。"""
-        msgs = []
-        if system_prompt:
-            msgs.append({"role": "system", "content": system_prompt})
-        for m in self.messages:
-            if msgs and msgs[-1]["role"] == "system" and m["role"] == "system":
-                msgs[-1]["content"] += "\n\n" + m["content"]
-            else:
-                msgs.append(m)
-        return msgs
+    def _write_all(self):
+        with MEMORY_FILEPATH.open("w", encoding="utf-8") as f:
+            for message in self.messages:
+                f.write(json.dumps(message, ensure_ascii=False) + "\n")
 
-    def after_llm_response(
-        self,
-        assistant_content: str,
-        total_tokens: int,
-        llm_call: Callable[..., Dict[str, Any]],
-    ):
-        """
-        LLM 调用后必须调用的回调：
-        1. 记录助手回复
-        2. 更新 token 用量
-        3. 若需要，自动执行压缩（内部会调用 llm_call 生成摘要）
-        """
-        # 1. 添加助手消息
-        self.add_message("assistant", assistant_content)
+    def _drop_unfinished_tool_turn(self) -> bool:
+        """上次崩溃如果停在 tool 调用中间，就丢掉这轮未完成消息。"""
+        for index in range(len(self.messages) - 1, -1, -1):
+            message = self.messages[index]
+            if message.get("role") != "assistant" or not message.get("tool_calls"):
+                continue
 
-        # 2. 更新最近一次的总 token 消耗
-        self.update_usage(total_tokens)
+            tail = self.messages[index + 1:]
+            if tail and not all(item.get("role") == "tool" for item in tail):
+                return False
 
-        # 3. 判断压缩
-        if self.needs_compression():
-            self.compress_with_llm(llm_call)
+            start = index - 1 if index > 0 and self.messages[index - 1].get("role") == "user" else index
+            del self.messages[start:]
+            return True
+
+        return False

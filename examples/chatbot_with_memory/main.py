@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from core.llm import call_llm
 from core.node import Node, Flow, shared
-from core.memory import LongTermMemory, ShortTermMemory
+from core.memory import Memory
 from tools import get_tools, ToolExecutor
 
 SYSTEM_PROMPT = (
@@ -25,16 +25,18 @@ class ChatNode(Node):
     """发送消息给 LLM，获取响应（可能包含 tool_calls）"""
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
-        stm = shared["stm"]
+        memory = shared["memory"]
         tools = shared["tools"]
 
-        messages = stm.build_context(system_prompt=SYSTEM_PROMPT)
+        messages = memory.build_context(system_prompt=SYSTEM_PROMPT)
         assistant_message = call_llm(messages=messages, tools=tools)
 
         if assistant_message.get("tool_calls"):
+            memory.add_raw_message(assistant_message)
             return "tool_call", assistant_message
 
-        return "after_response", assistant_message
+        memory.after_llm_response(assistant_message)
+        return "output", assistant_message
 
 
 class ToolCallNode(Node):
@@ -42,7 +44,7 @@ class ToolCallNode(Node):
 
     def exec(self, payload: Any) -> Tuple[str, Any]:
         response = payload
-        stm = shared["stm"]
+        memory = shared["memory"]
         executor = shared["tool_executor"]
 
         tool_calls = executor.parse_tool_calls(response)
@@ -51,7 +53,7 @@ class ToolCallNode(Node):
         for tc, result in zip(tool_calls, results):
             print(f"  [Tool] 执行: {tc.name}({tc.arguments})")
             print(f"  [Tool] 结果: {result.content[:100]}...")
-            stm.add_message("tool", result.content)
+            memory.add_raw_message(result.to_message())
 
         return "chat", None
 
@@ -66,21 +68,6 @@ class OutputNode(Node):
         return "default", None
 
 
-class MemoryAfterResponseNode(Node):
-    """LLM 响应后的 Memory 处理：记录回复、更新 token 用量、触发压缩"""
-
-    def exec(self, payload: Any) -> Tuple[str, Any]:
-        response = payload
-        stm = shared["stm"]
-
-        assistant_text = response.get("content", "")
-        usage_total = response.get("usage", {}).get("total_tokens", 0)
-
-        stm.after_llm_response(assistant_text, usage_total, call_llm)
-
-        return "output", response
-
-
 def run_chat() -> None:
     """运行对话循环"""
     print("=" * 60)
@@ -92,25 +79,17 @@ def run_chat() -> None:
 
     shared.clear()
 
-    ltm = LongTermMemory()
-    shared["stm"] = ShortTermMemory(
-        max_context_length=1024,
-        compress_threshold=0.9,
-        keep_messages_on_compress=4,
-        long_term_memory=ltm,
-    )
+    shared["memory"] = Memory()
     shared["tools"] = [t.to_llm_format() for t in get_tools()]
     shared["tool_executor"] = ToolExecutor()
 
     chat = ChatNode()
     tool_call = ToolCallNode()
-    memory_after = MemoryAfterResponseNode()
     output = OutputNode()
 
     chat - "tool_call" >> tool_call
     tool_call - "chat" >> chat
-    chat - "after_response" >> memory_after
-    memory_after - "output" >> output
+    chat - "output" >> output
 
     while True:
         user_input = input("👤 You: ").strip()
@@ -122,7 +101,7 @@ def run_chat() -> None:
         if not user_input:
             continue
 
-        shared["stm"].add_message("user", user_input)
+        shared["memory"].add_message("user", user_input)
         flow = Flow(chat)
         flow.run(None)
 
