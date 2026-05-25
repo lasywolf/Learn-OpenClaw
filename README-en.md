@@ -11,7 +11,7 @@ It can also help you land an agent-related job or internship. Quite a few studen
 1. Get your own LLM API key (about 15 minutes)
    - You may need to learn some Python and [uv](https://docs.astral.sh/uv/getting-started/installation/). It is written in Rust, similar to Cargo in the Rust ecosystem, and it is extremely fast.
    - Why use `uv` instead of Conda: `uv` is open source and has no commercial licensing risk. Conda has [potential commercial licensing issues](https://www.anaconda.com/blog/is-conda-free) for organizations with more than 200 people.
-   - You will probably need an LLM API key. I recommend [Kimi](https://platform.moonshot.cn/docs/overview) or [Zhipu](https://open.bigmodel.cn).
+   - You will probably need an LLM API key. I recommend [OpenAI](https://platform.openai.com/api-keys).
    - Configure `OPENAI_API_KEY` and `OPENAI_BASE_URL`, then try running [`core/llm.py`](./core/llm.py).
 
 2. Implement Node / Workflow / Agent (about 1 hour)

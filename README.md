@@ -17,7 +17,7 @@
    url = "https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple"
    default = true
    ```
-   - 你可能需要llm api-key，推荐[kimi](https://platform.moonshot.cn/docs/overview)或者[智谱](https://open.bigmodel.cn)
+   - 你可能需要llm api-key，推荐[DeepSeek](https://platform.deepseek.com/)、[kimi](https://platform.moonshot.cn/docs/overview)或者[智谱](https://open.bigmodel.cn)
    - 配置环境变量`OPENAI_API_KEY`和`OPENAI_BASE_URL`，并且尝试运行[`core/llm.py`](./core/llm.py)
 
 2. 实现 Node / Workflow / Agent （阅读需约1小时）
