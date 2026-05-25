@@ -9,8 +9,8 @@ MEMORY_FILEPATH = Path(r".\chat_memory\session.jsonl")                          
 LONG_TERM_MEMORY_FILEPATH = Path(r".\chat_memory\MEMORY.md")                          # 长期记忆文件存储路径（md格式）
 MAX_CONTEXT_LENGTH = 128_000                                                          # 大模型最大上下文窗口大小（按token计算）
 COMPRESS_THRESHOLD = 0.9                                                              # 摘要压缩阈值（达到阈值后自动摘要压缩）
-KEEP_MESSAGES_ON_COMPRESS = 4                                                         # 摘要压缩对话之后保留的最近对话轮数
-LONG_TERM_MEMORY_HEADER = "# 长期记忆：包括用户偏好、重要事件、运行环境等等\n\n"             # MEMORY.md文件的标题
+KEEP_MESSAGES_ON_COMPRESS = 4                                                         # 摘要压缩对话之后保留的最近消息条数
+LONG_TERM_MEMORY_HEADER = "# 长期记忆：包括用户偏好、重要事件、运行环境等等\n\n"            # MEMORY.md文件的标题
 MESSAGE_KEYS = {"role", "content", "tool_calls", "tool_call_id", "reasoning_content"} # message字典中可出现的所有key值
 
 
@@ -82,8 +82,10 @@ class Memory:
         if len(self.messages) <= KEEP_MESSAGES_ON_COMPRESS:
             return
 
-        old_messages = self.messages[:-KEEP_MESSAGES_ON_COMPRESS]
-        recent_messages = self.messages[-KEEP_MESSAGES_ON_COMPRESS:]
+        old_messages, recent_messages = self._split_messages_for_compression()
+        if not old_messages:
+            return
+
         response = call_llm(messages=self._build_compress_prompt(old_messages))
 
         try:
@@ -102,16 +104,39 @@ class Memory:
                 f.write("\n" + memory_update)
 
     def _build_compress_prompt(self, messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        long_term_memory = LONG_TERM_MEMORY_FILEPATH.read_text(encoding="utf-8").strip()
+        if long_term_memory == LONG_TERM_MEMORY_HEADER.strip():
+            long_term_memory = "无"
         return [
             *messages,
             {
                 "role": "user",
                 "content": (
-                    "请压缩以上对话历史，并判断是否有值得长期记住的信息（用户偏好、关键事实、运行环境等等。需要排除已有的长期记忆）。\n"
+                    f"已有长期记忆：\n{long_term_memory}\n\n请压缩以上对话历史，并判断是否有值得长期记住的信息（用户偏好、关键事实、运行环境等等。注意排除已有的长期记忆）。\n"
                     "只返回 JSON，包含 summary: 对话历史摘要总结 和 memory_update: 值得长期记忆的信息。"
                 ),
             },
         ]
+
+    def _split_messages_for_compression(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        split_index = max(0, len(self.messages) - KEEP_MESSAGES_ON_COMPRESS)
+        split_index = self._move_split_to_safe_boundary(split_index)
+        return self.messages[:split_index], self.messages[split_index:]
+
+    def _move_split_to_safe_boundary(self, split_index: int) -> int:
+        """避免把 assistant tool_calls 和后续 tool 结果拆到摘要边界两边。"""
+        while split_index > 0 and self.messages[split_index].get("role") == "tool":
+            split_index -= 1
+
+        if (
+            split_index > 0
+            and self.messages[split_index].get("role") == "assistant"
+            and self.messages[split_index].get("tool_calls")
+            and self.messages[split_index - 1].get("role") == "user"
+        ):
+            split_index -= 1
+
+        return split_index
 
     def _write_all(self):
         with MEMORY_FILEPATH.open("w", encoding="utf-8") as f:

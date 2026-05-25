@@ -1,13 +1,13 @@
 # Chatbot with Memory
 
-带记忆和上下文管理的对话机器人。
+这是一个带记忆的聊天机器人示例。它在 `chatbot_with_tools` 的基础上增加了 `Memory`，可以把对话保存下来，并在上下文太长时自动压缩。
 
-## 特性
+## 功能
 
-- **工具调用**：支持 read, write, edit, bash, grep, find, ls, search 等工具
-- **短期记忆**：最近几轮完整对话上下文，支持自动压缩
-- **长期记忆**：通过 MEMORY.md 持久化保存重要信息
-- **自动管理**：每次 LLM 调用后自动记录、更新 token 用量、触发压缩
+- **工具调用**：支持 read, write, edit, bash, grep, find, ls, search 等工具。
+- **对话记忆**：把用户、助手、工具结果等消息保存到 `chat_memory/session.jsonl`。
+- **长期记忆**：把用户偏好、重要事实、运行环境等信息保存到 `chat_memory/MEMORY.md`。
+- **自动压缩**：当上下文接近模型上限时，把较早的消息压缩成摘要，并保留最近几条消息。
 
 ## 运行
 
@@ -16,17 +16,30 @@
 export OPENAI_API_KEY=your-api-key
 export OPENAI_BASE_URL=your-base-url
 
-# 运行
+# 从项目根目录运行
 python examples/chatbot_with_memory/main.py
 ```
 
+Windows PowerShell 可以这样设置环境变量：
+
+```powershell
+$env:OPENAI_API_KEY="your-api-key"
+$env:OPENAI_BASE_URL="your-base-url"
+python examples/chatbot_with_memory/main.py
+```
+
+运行后会自动创建 `chat_memory/` 目录：
+
+- `session.jsonl`：保存完整的对话消息，一行是一条 JSON 消息。
+- `MEMORY.md`：保存长期记忆，适合放以后也有用的信息。
+
 ## 记忆管理流程
 
-1. 用户提问 → 添加到短期记忆
-2. 调用 LLM → 获取回复
-3. 如果有 tool_calls → 执行工具 → 循环调用 LLM
-4. 最终回复 → 通过 `after_llm_response()` 回调：
-   - 记录助手回复
-   - 更新 token 用量
-   - 若达到压缩阈值（90%），自动调用 LLM 生成摘要
-   - 提取值得长期记忆的信息写入 MEMORY.md
+1. 用户输入一条消息，写入 `session.jsonl`。
+2. 程序把 system prompt、长期记忆、历史对话一起传给 LLM。
+3. 如果 LLM 返回 `tool_calls`，程序先保存这条助手消息，再执行工具，并把工具结果也写入记忆。
+4. 工具执行完后，再次调用 LLM，直到得到最终文字回复。
+5. 最终回复会进入 `after_llm_response()`：保存助手回复、读取本次 token 用量、判断是否需要压缩。
+6. 如果 token 数超过阈值，就压缩较早的消息。压缩时会避免拆开一次完整的工具调用消息组。
+
+简单理解：`session.jsonl` 负责保存聊天过程，`MEMORY.md` 负责保存长期有用的信息，自动压缩负责防止上下文越来越长。
