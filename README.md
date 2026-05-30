@@ -68,6 +68,7 @@
    - subagent概念由此发展出来，甚至推出了[自定义subagent](https://code.claude.com/docs/zh-CN/sub-agents)。但我并不推荐自定义subagent，毕竟由master agent来自动生成subagent总是个简单高效的选择
    - Agent Teams则是目前最前沿的发展方向，摒弃了主从的agent结构，而采用并行的方式，能够成倍效率且agent间不冲突地开发项目，这是十分有价值的，大伙都在研究，可以参考claude的[agent-teams](https://code.claude.com/docs/zh-CN/agent-teams)以及blog [Building a C compiler with a team of parallel Claudes](https://www.anthropic.com/engineering/building-c-compiler) 还有cursor的blog [扩展长时间运行的自主编码能力](https://cursor.com/cn/blog/scaling-agents) 和 [迈向自动驾驶代码库](https://cursor.com/cn/blog/self-driving-codebases)
    - 顺便一提Agent Teams可以通过Tmux来实现简单且效果非常好！可以看这个文章[What I learned building an opinionated and minimal coding agent](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)里面的tmux部分
+   - 实践：可以先阅读[`core/sub_agent.py`](./core/sub_agent.py)和[`examples/chatbot_with_sub_agent`](./examples/chatbot_with_sub_agent)，理解父 agent 如何拆解目标、顺序运行 sub-agent、再汇总结果。
 
 7. 阅读和理解 [pi-mono](https://github.com/badlogic/pi-mono) （阅读需约4小时）
    - Openclaw项目的底层就是pi-mono，pi-mono就是世界上开源里最好的coding-agent
