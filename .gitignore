@@ -13,6 +13,10 @@ venv/
 .env
 *.egg
 
+# Local dependencies
+node_modules/
+note_modules/
+
 # IDE
 .idea/
 .vscode/

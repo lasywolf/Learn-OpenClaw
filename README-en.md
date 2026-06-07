@@ -4,6 +4,12 @@
 Learn agent fundamentals from scratch in one day (about 9 hours)! I wrote this tutorial to show that agents are actually very simple.
 It can also help you land an agent-related job or internship. Quite a few students have already found internships after following this tutorial, and it has been very well received in study groups, so now I am open-sourcing it for everyone.
 
+## Sponsor
+
+[![MyClaw.ai - Your OpenClaw Agent, Always On.](./assets/myclaw-banner.svg)](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)
+
+**[MyClaw.ai](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)** · Run your OpenClaw without managing a server. Get a cloud-hosted OpenClaw instance with one-click setup, 24/7 uptime, full code control, and complete data ownership. [Get started now ->](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)
+
 ## Overview
 
 ### Learn Agent Basics (about 1 day * 9 hours)

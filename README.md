@@ -4,6 +4,12 @@
 零基础一天 （9小时）学完agent！写这个教程就是想告诉大家，Agent其实非常简单！
 并且能帮助你找到 Agent相关工作/实习！目前有很多个同学看我的教程找到了实习，且本教程在同学群里备受好评，现在开源给大伙！
 
+## 赞助商
+
+[![MyClaw.ai - Your OpenClaw Agent, Always On.](./assets/myclaw-banner.svg)](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)
+
+**[MyClaw.ai](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)** · 不想自己折腾服务器的话，可以用云端托管的 OpenClaw 实例：一键设置、24/7 在线，并且保留完整代码控制权和数据所有权。[立即开始 ->](https://myclaw.ai?utm_source=github&utm_campaign=learn-openclaw)
+
 ## 总体内容展示
 
 ### 学会 Agent（学习需约 1天 * 9小时）
