@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from contextlib import AsyncExitStack
 from pathlib import Path
 from typing import Any
 
@@ -19,29 +20,38 @@ class MCPClient:
     def __init__(self) -> None:
         self.session: ClientSession | None = None
         self.tools: list[dict] = []
+        self._stack: AsyncExitStack | None = None
 
-    async def connect_stdio(self, command: str, args: list[str] | None = None) -> None:
+    async def connect_stdio(
+        self,
+        command: str,
+        args: list[str] | None = None,
+        env: dict[str, str] | None = None,
+    ) -> None:
         """通过 stdio 连接到 MCP 服务器"""
         server_params = StdioServerParameters(
             command=command,
             args=args or [],
-            env=None,
+            env=env,
         )
 
-        async with stdio_client(server_params) as (read, write):
-            self.session = ClientSession(read, write)
-            await self.session.initialize()
+        # MCP SDK v2: ClientSession 需作为异步上下文管理器使用,
+        # 且 stdio_client 的上下文必须存活到连接关闭,故用 AsyncExitStack 统一管理
+        self._stack = AsyncExitStack()
+        read, write = await self._stack.enter_async_context(stdio_client(server_params))
+        self.session = await self._stack.enter_async_context(ClientSession(read, write))
+        await self.session.initialize()
 
-            # 获取可用工具列表
-            tools_result = await self.session.list_tools()
-            self.tools = [tool.dict() for tool in tools_result.tools]
+        # 获取可用工具列表
+        tools_result = await self.session.list_tools()
+        self.tools = [tool.model_dump() for tool in tools_result.tools]
 
     async def list_tools(self) -> list[dict]:
         """列出服务器上的所有工具"""
         if not self.session:
             raise RuntimeError("Not connected to server")
         tools_result = await self.session.list_tools()
-        return [tool.dict() for tool in tools_result.tools]
+        return [tool.model_dump() for tool in tools_result.tools]
 
     async def call_tool(self, name: str, arguments: dict) -> Any:
         """调用服务器上的工具"""
@@ -52,8 +62,9 @@ class MCPClient:
 
     async def close(self) -> None:
         """关闭连接"""
-        if self.session:
-            await self.session.close()
+        if self._stack:
+            await self._stack.aclose()
+            self._stack = None
             self.session = None
 
 

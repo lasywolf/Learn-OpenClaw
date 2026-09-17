@@ -49,6 +49,7 @@
    - Skill来源：但人们渐渐发现了MCP的弊端：每次调用llm时候，都会把在prompt额外加上MCP的所有Tool的信息（包括name、parameters、description等等），发现大部分MCP服务并没有想象的那么有用，以及导致性能变差以及token浪费，anthropic在blog描述了这件事 [Code execution with MCP: Building more efficient agents](https://www.anthropic.com/engineering/code-execution-with-mcp)，并分享了它们的解决方案，就是**渐进式加载**和**多用代码执行**，后来anthropic发布了[skill](https://support.claude.com/en/articles/12512176-what-are-skills)就和这个差不多，重点就是**渐进式加载**和**多用代码执行**。
    - 设计Tool：实际Agent并不需要那么多五花八门的Tool，最重要的是linux中的bash、edit、find、grep、ls、read、write命令，这些就已经能做很多事且做得非常好，Vercel[通过移除大部分的Tool反而提高了text-to-sql从80%到100%](https://vercel.com/blog/we-removed-80-percent-of-our-agents-tools)，以及pi-mono极简coding-agent作者提到[这四个工具就是构建有效 Coding Agent 所需的全部：read、write、edit、bash](https://mariozechner.at/posts/2025-11-30-pi-coding-agent/)
    - 实践：可以阅读[`tools`](./tools)和[`examples/chatbot_with_tools`](./examples/chatbot_with_tools)文件夹里的实现
+   - MCP实践：可以阅读[`tools/mcp`](./tools/mcp)和[`examples/chatbot_with_mcp`](./examples/chatbot_with_mcp)文件夹里的实现，chatbot 会通过 MCP 协议（stdio）调用 MCP 服务器上的 search/add/multiply 工具
    - 总结: MCP是Remote Tool，Skill是Local Tool，尽量不要设计Tool并且优先用linux的bash来解决问题
 
 5. 实现 Context / Memory 管理（阅读需约25分钟）

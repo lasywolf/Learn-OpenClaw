@@ -9,6 +9,7 @@ examples/
 ├── chatbot/              # 简单对话机器人
 ├── chatbot_with_tools/   # 带工具调用的对话机器人
 ├── chatbot_with_memory/  # 带记忆管理的对话机器人
+├── chatbot_with_mcp/     # 通过 MCP 调用远程工具的对话机器人
 └── workflow/             # 工作流示例
 ```
 
@@ -113,6 +114,38 @@ flowchart TD
 
 - `chat_memory/session.jsonl`: 追加保存完整对话消息。
 - `chat_memory/MEMORY.md`: 保存长期有用的信息，例如用户偏好、关键事实和运行环境。
+
+---
+
+### 5. Chatbot with MCP - 通过 MCP 协议调用远程工具的对话机器人
+
+演示如何让 chatbot 通过 MCP 协议（stdio 传输）调用 MCP 服务器上的工具，而不是内置本地工具。
+
+```bash
+python examples/chatbot_with_mcp/main.py
+```
+
+**流程图:**
+
+```mermaid
+flowchart TD
+    User[用户输入] --> Chat1[ChatNode]
+    Chat1 -->|tool_calls| Tool[ToolCallNode]
+    Tool -->|MCP call_tool| Server[MCP Server<br/>tools/mcp/server.py]
+    Server -->|tool result| Tool
+    Tool -->|chat| Chat2[ChatNode]
+    Chat2 --> Output[输出回答]
+    Output --> User
+
+    style Tool fill:#f9f,stroke:#333,stroke-width:2px
+    style Server fill:#fff3e0,stroke:#333
+```
+
+**说明:**
+
+- MCP 客户端是 async 的，而 Node/Flow 是同步的，示例用后台线程的事件循环（`MCPClientRunner`）桥接两者
+- `tools/mcp/server.py` 提供 `search`、`add`、`multiply` 三个 MCP 工具
+- MCP 的 Tool 定义会转换成 OpenAI function calling 格式再传给 LLM
 
 ---
 
